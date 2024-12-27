@@ -1,0 +1,311 @@
+<html><head><base href="." /><title>Система обхода домов</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+}
+
+.container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+    margin: 10px auto;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+button {
+    width: 100%;
+    padding: 0.8rem;
+    background: #02c6de;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-bottom: 0.5rem;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:hover {
+    background: #02b3c8;
+}
+
+.error {
+    color: red;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.success {
+    color: green;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.hidden {
+    display: none;
+}
+
+.logout-btn {
+    background: #02c6de;
+}
+
+.logout-btn:hover {
+    background: #02b3c8;
+}
+
+.new-round-btn {
+    background: #02c6de;
+}
+
+.new-round-btn:hover {
+    background: #02b3c8;
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    h1 {
+        font-size: 1.3rem;
+    }
+    
+    input, select, textarea {
+        font-size: 16px;
+        padding: 0.6rem;
+    }
+    
+    button {
+        padding: 0.7rem;
+    }
+}
+</style>
+</head>
+<body>
+<!-- Страница входа -->
+<div id="loginPage" class="container">
+    <h1>Вход в систему</h1>
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="username">Логин:</label>
+            <input type="text" id="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Пароль:</label>
+            <input type="password" id="password" required>
+        </div>
+        <button type="submit">Войти</button>
+        <div id="loginError" class="error hidden"></div>
+    </form>
+</div>
+
+<!-- Страница ввода адреса -->
+<div id="addressPage" class="container hidden">
+    <h1>Ввод адреса</h1>
+    <form id="addressForm">
+        <div class="form-group">
+            <label for="street">Улица (мкр):</label>
+            <input type="text" id="street" required>
+        </div>
+        <div class="form-group">
+            <label for="house">Дом:</label>
+            <input type="text" id="house" required>
+        </div>
+        <div class="form-group">
+            <label for="startDate">Дата обхода:</label>
+            <input type="date" id="startDate" required>
+        </div>
+        <div class="form-group">
+            <label for="startTime">Время начала:</label>
+            <input type="time" id="startTime" required>
+        </div>
+        <button type="submit">Далее</button>
+    </form>
+</div>
+
+<!-- Страница информации о квартире -->
+<div id="apartmentPage" class="container hidden">
+    <h1>Информация о квартире</h1>
+    <form id="apartmentForm">
+        <div class="form-group">
+            <label for="apartment">Квартира:</label>
+            <input type="text" id="apartment" required>
+        </div>
+        <div class="form-group">
+            <label for="status">Статус:</label>
+            <select id="status" required>
+                <option value="">Выберите статус</option>
+                <option value="home">Дома</option>
+                <option value="not_home">Не дома</option>
+                <option value="refused">Отказ</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="internet">Интернет провайдер:</label>
+            <select id="internet" required>
+                <option value="">Выберите провайдера</option>
+                <option value="provider1">Провайдер 1</option>
+                <option value="provider2">Провайдер 2</option>
+                <option value="none">Нет интернета</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="comment">Комментарий:</label>
+            <textarea id="comment" rows="3"></textarea>
+        </div>
+        <button type="submit" id="saveButton">Сохранить</button>
+        <button type="button" id="finishButton">Закончить обход</button>
+    </form>
+</div>
+
+<!-- Страница завершения -->
+<div id="completionPage" class="container hidden">
+    <h1>Обход завершен</h1>
+    <div class="form-group">
+        <label>Дата обхода:</label>
+        <div id="dateSurveyDisplay"></div>
+    </div>
+    <div class="form-group">
+        <label>Время начала:</label>
+        <div id="startTimeDisplay"></div>
+    </div>
+    <div class="form-group">
+        <label>Время окончания:</label>
+        <div id="endTimeDisplay"></div>
+    </div>
+    <div class="form-group">
+        <label>Общее время обхода:</label>
+        <div id="totalTimeDisplay"></div>
+    </div>
+    <button type="button" class="new-round-btn" onclick="startNewRound()">Начать новый обход</button>
+    <button type="button" class="logout-btn" onclick="logout()">Выход</button>
+</div>
+
+<script>
+let currentStartTime = null;
+let currentStartDate = null;
+
+function saveToLocalStorage(data) {
+    let savedData = JSON.parse(localStorage.getItem('surveyData') || '[]');
+    savedData.push(data);
+    localStorage.setItem('surveyData', JSON.stringify(savedData));
+}
+
+function logout() {
+    document.getElementById('completionPage').classList.add('hidden');
+    document.getElementById('loginPage').classList.remove('hidden');
+    document.getElementById('loginForm').reset();
+    document.getElementById('addressForm').reset();
+    document.getElementById('apartmentForm').reset();
+}
+
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    if (username && password) {
+        document.getElementById('loginPage').classList.add('hidden');
+        document.getElementById('addressPage').classList.remove('hidden');
+    } else {
+        document.getElementById('loginError').textContent = 'Неверный логин или пароль';
+        document.getElementById('loginError').classList.remove('hidden');
+    }
+});
+
+document.getElementById('addressForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    currentStartTime = document.getElementById('startTime').value;
+    currentStartDate = document.getElementById('startDate').value;
+    document.getElementById('addressPage').classList.add('hidden');
+    document.getElementById('apartmentPage').classList.remove('hidden');
+});
+
+document.getElementById('apartmentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const apartmentData = {
+        apartment: document.getElementById('apartment').value,
+        status: document.getElementById('status').value,
+        internet: document.getElementById('internet').value,
+        comment: document.getElementById('comment').value,
+        timestamp: new Date().toISOString()
+    };
+    
+    saveToLocalStorage(apartmentData);
+    
+    document.getElementById('apartment').value = '';
+    document.getElementById('status').value = '';
+    document.getElementById('internet').value = '';
+    document.getElementById('comment').value = '';
+    
+    alert('Информация сохранена');
+});
+
+document.getElementById('finishButton').addEventListener('click', function() {
+    const endTime = new Date();
+    document.getElementById('apartmentPage').classList.add('hidden');
+    document.getElementById('completionPage').classList.remove('hidden');
+    
+    document.getElementById('dateSurveyDisplay').textContent = new Date(currentStartDate).toLocaleDateString();
+    document.getElementById('startTimeDisplay').textContent = currentStartTime;
+    document.getElementById('endTimeDisplay').textContent = endTime.toLocaleTimeString();
+    
+    const startTimeObj = new Date(`${currentStartDate} ${currentStartTime}`);
+    const totalMinutes = Math.round((endTime - startTimeObj) / 60000);
+    document.getElementById('totalTimeDisplay').textContent = `${totalMinutes} минут`;
+});
+
+function startNewRound() {
+    document.getElementById('completionPage').classList.add('hidden');
+    document.getElementById('addressPage').classList.remove('hidden');
+    document.getElementById('loginForm').reset();
+    document.getElementById('addressForm').reset();
+    document.getElementById('apartmentForm').reset();
+}
+</script>
+</body></html>
