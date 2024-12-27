@@ -227,16 +227,144 @@ button:hover {
 </div>
 
 <script>
-let currentStartTime = null;
-let currentStartDate = null;
+const users = [
+    { username: "APirnazarov", password: "Tcell2025" },
+    { username: "MJuraeva", password: "Tcell2025" },
+    { username: "MSultonova", password: "Tcell2025" }
+];
 
-function saveToLocalStorage(data) {
-    let savedData = JSON.parse(localStorage.getItem('surveyData') || '[]');
-    savedData.push(data);
-    localStorage.setItem('surveyData', JSON.stringify(savedData));
+let currentAgent = null; // Имя торгового агента
+let surveyData = {}; // Общий объект для хранения обхода
+
+// Функция для сохранения данных о квартире
+function saveFlatData(flatData) {
+    // Если массив квартир не создан, создаем его
+    if (!surveyData.apartments) {
+        surveyData.apartments = [];
+    }
+    // Добавляем новую квартиру в массив
+    surveyData.apartments.push(flatData);
 }
 
+// Обработчик формы логина
+document.getElementById('loginForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    const user = users.find(user => user.username === username && user.password === password);
+
+    if (user) {
+        currentAgent = username; // Сохраняем имя агента
+        document.getElementById('loginPage').classList.add('hidden');
+        document.getElementById('addressPage').classList.remove('hidden');
+    } else {
+        const loginError = document.getElementById('loginError');
+        loginError.textContent = 'Неверный логин или пароль';
+        loginError.classList.remove('hidden');
+    }
+});
+
+// Обработчик формы ввода адреса
+document.getElementById('addressForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const street = document.getElementById('street').value;
+    const house = document.getElementById('house').value;
+    const startDate = document.getElementById('startDate').value;
+    const startTime = document.getElementById('startTime').value;
+
+    surveyData = {
+        agent: currentAgent,
+        date: startDate,
+        startTime: startTime,
+        street: street,
+        house: house,
+        apartments: [] // Инициализируем пустой массив для квартир
+    };
+
+    document.getElementById('addressPage').classList.add('hidden');
+    document.getElementById('apartmentPage').classList.remove('hidden');
+});
+
+// Обработчик формы информации о квартире
+document.getElementById('apartmentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const flatData = {
+        flat: document.getElementById('apartment').value,
+        status: document.getElementById('status').value,
+        internet: document.getElementById('internet').value,
+        comment: document.getElementById('comment').value,
+        timestamp: new Date().toISOString()
+    };
+
+    // Добавляем данные о квартире в массив
+    saveFlatData(flatData);
+
+    // Очищаем поля формы
+    document.getElementById('apartment').value = '';
+    document.getElementById('status').value = '';
+    document.getElementById('internet').value = '';
+    document.getElementById('comment').value = '';
+
+    alert('Данные о квартире сохранены');
+    console.log(surveyData); // Для проверки сохраняемых данных
+});
+
+// Обработчик завершения обхода
+document.getElementById('finishButton').addEventListener('click', function() {
+    const endTime = new Date();
+    surveyData.endTime = endTime.toLocaleTimeString(); // Сохраняем время окончания обхода
+
+    // Сохраняем общий объект обхода в LocalStorage
+    let allSurveys = JSON.parse(localStorage.getItem('surveyData')) || [];
+    allSurveys.push(surveyData);
+    localStorage.setItem('surveyData', JSON.stringify(allSurveys));
+
+    document.getElementById('apartmentPage').classList.add('hidden');
+    document.getElementById('completionPage').classList.remove('hidden');
+
+    document.getElementById('dateSurveyDisplay').textContent = new Date(surveyData.date).toLocaleDateString();
+    document.getElementById('startTimeDisplay').textContent = surveyData.startTime;
+    document.getElementById('endTimeDisplay').textContent = surveyData.endTime;
+
+    const startTimeObj = new Date(`${surveyData.date} ${surveyData.startTime}`);
+    const totalMinutes = Math.round((endTime - startTimeObj) / 60000);
+    document.getElementById('totalTimeDisplay').textContent = `${totalMinutes} минут`;
+});
+
+// Функция для начала нового обхода
+function startNewRound() {
+    surveyData = {}; // Очищаем данные текущего обхода
+    document.getElementById('completionPage').classList.add('hidden');
+    document.getElementById('addressPage').classList.remove('hidden');
+    document.getElementById('loginForm').reset();
+    document.getElementById('addressForm').reset();
+    document.getElementById('apartmentForm').reset();
+}
+// Функция для скачивания JSON-файла
+function downloadJSONFile(filename, data) {
+    const jsonData = JSON.stringify(data, null, 2); // Преобразуем данные в формат JSON
+    const blob = new Blob([jsonData], { type: 'application/json' }); // Создаем Blob-объект
+    const link = document.createElement('a'); // Создаем ссылку для скачивания
+    link.href = URL.createObjectURL(blob);
+    link.download = filename; // Указываем имя файла
+    link.click(); // Симулируем клик для скачивания
+}
+
+// Функция выхода агента с сохранением данных
 function logout() {
+    if (Object.keys(surveyData).length > 0) {
+        // Формируем имя файла: Имя агента + Дата
+        const filename = `${surveyData.agent}_${surveyData.date}.json`;
+
+        // Сохраняем текущие данные в файл
+        downloadJSONFile(filename, surveyData);
+
+        // Очищаем данные текущего обхода
+        surveyData = {};
+    }
+
+    // Возвращаемся на страницу входа
     document.getElementById('completionPage').classList.add('hidden');
     document.getElementById('loginPage').classList.remove('hidden');
     document.getElementById('loginForm').reset();
@@ -244,68 +372,5 @@ function logout() {
     document.getElementById('apartmentForm').reset();
 }
 
-document.getElementById('loginForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    
-    if (username && password) {
-        document.getElementById('loginPage').classList.add('hidden');
-        document.getElementById('addressPage').classList.remove('hidden');
-    } else {
-        document.getElementById('loginError').textContent = 'Неверный логин или пароль';
-        document.getElementById('loginError').classList.remove('hidden');
-    }
-});
-
-document.getElementById('addressForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    currentStartTime = document.getElementById('startTime').value;
-    currentStartDate = document.getElementById('startDate').value;
-    document.getElementById('addressPage').classList.add('hidden');
-    document.getElementById('apartmentPage').classList.remove('hidden');
-});
-
-document.getElementById('apartmentForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const apartmentData = {
-        apartment: document.getElementById('apartment').value,
-        status: document.getElementById('status').value,
-        internet: document.getElementById('internet').value,
-        comment: document.getElementById('comment').value,
-        timestamp: new Date().toISOString()
-    };
-    
-    saveToLocalStorage(apartmentData);
-    
-    document.getElementById('apartment').value = '';
-    document.getElementById('status').value = '';
-    document.getElementById('internet').value = '';
-    document.getElementById('comment').value = '';
-    
-    alert('Информация сохранена');
-});
-
-document.getElementById('finishButton').addEventListener('click', function() {
-    const endTime = new Date();
-    document.getElementById('apartmentPage').classList.add('hidden');
-    document.getElementById('completionPage').classList.remove('hidden');
-    
-    document.getElementById('dateSurveyDisplay').textContent = new Date(currentStartDate).toLocaleDateString();
-    document.getElementById('startTimeDisplay').textContent = currentStartTime;
-    document.getElementById('endTimeDisplay').textContent = endTime.toLocaleTimeString();
-    
-    const startTimeObj = new Date(`${currentStartDate} ${currentStartTime}`);
-    const totalMinutes = Math.round((endTime - startTimeObj) / 60000);
-    document.getElementById('totalTimeDisplay').textContent = `${totalMinutes} минут`;
-});
-
-function startNewRound() {
-    document.getElementById('completionPage').classList.add('hidden');
-    document.getElementById('addressPage').classList.remove('hidden');
-    document.getElementById('loginForm').reset();
-    document.getElementById('addressForm').reset();
-    document.getElementById('apartmentForm').reset();
-}
 </script>
 </body></html>
